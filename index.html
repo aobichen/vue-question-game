@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>練習2</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.5.17/vue.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js "></script>
+    <style>
+        #app {
+            font-size: 1.25em;
+        }
+        
+        button {
+            font-size: 1.5em;
+        }
+        
+        label {
+            display: block;
+        }
+        
+        .quest {
+            margin-bottom: 1em;
+            padding-bottom: 1em;
+            border-bottom: 1px solid #ccc;
+        }
+        
+        .prev-button {
+            float: left;
+            left: 10px;
+        }
+        
+        .next-button {
+            float: right;
+            right: 10px;
+        }
+        
+        .start {
+            background: #2c3e50;
+            height: 900px;
+            text-align: center;
+        }
+        
+        .start button {
+            padding: 1.2em 2.8em;
+            border-radius: 0.6em;
+            border: 2px solid #e74c3c;
+            border-color: #f1c40f;
+            color: #fff;
+            background-image: linear-gradient(45deg, #f1c40f 50%, transparent 50%);
+            background-size: 400%;
+            margin-top: 20%;
+        }
+        
+        .start figure {
+            color: #fff;
+            font-size: 14px;
+        }
+        
+        .input-quest {
+            height: 80px;
+            width: 80%;
+        }
+        
+        .input-ans {
+            width: 200px;
+            height: 25px;
+        }
+        
+        .input-value {
+            height: 25px;
+        }
+        
+        .create-div {
+            margin-top: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!--
+練習2： 一個簡單的心理測驗遊戲
+1. 改寫網頁，透過 v-for 將題目與選項依序列出
+2. 按下「看結果」按鈕計算總分
+3. 按下「重置」按鈕重置選項
+-->
+
+    <div id="app">
+        <h1>簡單的心理測驗 </h1>
+        <hr>
+        <div v-if="startBtnShow" class="start">
+            <button type="button" class="" @click="start()">Start</button>
+            <figure @click="create()">新增題目</figure>
+        </div>
+
+        <div v-show="isShowAdd" class="create-div">
+            目前有 {{questions.length}} 題
+            <div>
+                題目 ：<input class="input-quest" type="text" v-model="createQuest.quest">
+                <br>
+                <template v-for="(opt,idx) in createQuest.options">
+                      {{idx+1}}.  
+                      答案：<input type="text" class="input-ans" v-model="opt.ans">
+                      分數 : <input class="input-value" type="text" v-model="opt.value">
+                <br>
+                    </template>
+
+
+            </div>
+            <div style="margin-top: 20px;">
+                <button type="button" @click="addQuest()">
+                    確定
+                </button>
+                <button type="button" @click="restart()">
+                    返回
+                </button>
+                <button type="button" @click="start()">
+                        開始測驗
+                    </button>
+            </div>
+        </div>
+
+        <div v-if="isShowQuest">
+            <div class="quest" v-for="(item,idx) in questions" v-show="currentIndex == idx">
+                <h3>{{idx +1}}. {{ item.quest }}</h3>
+                <template v-for="(sub,idx) in item.options">
+              <label><input type="radio" v-model.number="item.selected" v-bind:value="sub.value"> {{idx +1}}. {{sub.ans}}</label>
+        </template>
+
+
+            </div>
+            <div style="height:50px;">
+                <button type="button" class="prev-button" @click="prev()" :disabled="currentIndex === 0">上一題</button>
+                <button type="button" class="next-button " @click="next()" :disabled="(currentIndex+1) >= questions.length">下一題</button>
+            </div>
+            <button type="button " @click="settlement()" :disabled="(currentIndex +1) <= questions.length-1">看結果</button>
+            <button type="button " @click="reset()">重置</button>
+            <button type="button " @click="restart()">重新開始</button>
+        </div>
+    </div>
+
+
+    <script>
+        var vm = new Vue({
+            el: '#app',
+            data: {
+                startBtnShow: true,
+                isShowAdd: false,
+                isShowQuest: false,
+                currentIndex: 0,
+                createQuest: {},
+                questions: []
+            },
+            created() {
+                axios.get('./quest-list.json')
+                    .then((response) => {
+                        this.questions = response.data;
+                    });
+
+                this.createQuest = {
+                    quest: "",
+                    options: [],
+                    selected: null
+                }
+
+                this.createQuest.options.push({
+                    ans: "",
+                    value: ""
+                });
+                this.createQuest.options.push({
+                    ans: "",
+                    value: ""
+                });
+                this.createQuest.options.push({
+                    ans: "",
+                    value: ""
+                });
+                this.createQuest.options.push({
+                    ans: "",
+                    value: ""
+                });
+
+            },
+            computed: {
+                total: function() {
+                    let total = 0;
+                    this.questions.forEach(element => {
+                        total += element.selected;
+                    });
+                    return total;
+                }
+            },
+            methods: {
+                addQuest() {
+
+                    let createQuest = {
+                        quest: this.createQuest.quest,
+                        options: [],
+                        selected: null
+                    };
+                    this.createQuest.options.forEach((item) => {
+                        createQuest.options.push({
+                            ans: item.ans,
+                            value: item.value
+                        });
+                    });
+                    this.questions.push(createQuest);
+                    console.log(this.questions);
+                    this.createQuest.quest = "";
+                    this.createQuest.options.forEach((item) => {
+                        item.ans = "";
+                        item.value = "";
+                    })
+                },
+                create() {
+                    this.isShowAdd = true;
+                    this.startBtnShow = false;
+                    this.isShowQuest = false;
+                },
+                start() {
+                    this.startBtnShow = false;
+                    this.isShowQuest = true;
+                    this.isShowAdd = false;
+                },
+                restart() {
+                    this.isShowAdd = false;
+                    this.startBtnShow = true;
+                    this.isShowQuest = false;
+                },
+                settlement: function() {
+                    if (this.questions[this.questions.length - 1].selected === null) {
+                        alert("請選擇！");
+                        return;
+                    }
+                    alert(this.total);
+                },
+                reset: function() {
+                    this.currentIndex = 0;
+                    this.questions.forEach(element => {
+                        element.selected = null;
+                    });
+                },
+                next() {
+                    if (this.questions[0].selected == null) {
+                        alert("請選擇！");
+                        return;
+                    }
+                    if ((this.currentIndex + 1) < this.questions.length) {
+                        this.currentIndex++;
+                    }
+                },
+                prev() {
+                    if (this.currentIndex > 0) {
+                        this.currentIndex--;
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
